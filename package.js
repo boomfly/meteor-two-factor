@@ -17,6 +17,8 @@ Package.onUse(function(api) {
   api.use(['ecmascript', 'coffeescript', 'check']);
   api.use('reactive-dict', 'client');
   api.use('accounts-password', ['client', 'server']);
+  api.use('dyaa:authenticator', 'server');
+  api.use('simply:reactive-local-storage', 'client');
   api.mainModule('client.coffee', 'client');
   api.mainModule('server.coffee', 'server');
 });

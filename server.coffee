@@ -1,4 +1,4 @@
-import Authenticator from 'meteor/dyaa:authenticator'
+import { Authenticator } from 'meteor/dyaa:authenticator'
 import moment from 'moment'
 import momentDurationFormatSetup from 'moment-duration-format'
 momentDurationFormatSetup(moment)
@@ -52,9 +52,11 @@ Meteor.methods
       when 'google-authenticator'
         # Generate new totp from google and set to newToken
         domain = TwoFactor.options.googleAuthenticatorDomain or 'example.com'
-        label = currentUser.username + '@' + domain
-        # issuer = TwoFactor.options.googleAuthenticatorIssuer
-        issuer = ''
+        if currentUser.username
+          label = currentUser.username + '@' + domain
+        else
+          label = currentUser.emails?[0]?.address
+        issuer = TwoFactor.options.googleAuthenticatorIssuer or 'Meteor'
         token = Authenticator.getAuthCode(label, issuer)
         Meteor.users.update {_id: this.userId}, {
           $set:
@@ -175,26 +177,49 @@ Meteor.methods
       }
 
   'TwoFactor.getAuthenticationCode': (userQuery, password) ->
-    check(userQuery, userQueryValidator)
-    check(password, passwordValidator)
+    if not @userId
+      check(userQuery, userQueryValidator)
+      check(password, passwordValidator)
 
-    fieldName = getFieldName()
+    if @userId
+      user = Meteor.users.findOne(@userId)
+    else
+      user = Accounts._findUserByQuery(userQuery)
 
-    user = Accounts._findUserByQuery(userQuery)
     throw invalidLogin() unless user
 
-    checkPassword = Accounts._checkPassword(user, password)
-    throw invalidLogin() if checkPassword.error
+    if not @userId
+      checkPassword = Accounts._checkPassword(user, password);
+      throw invalidLogin() if checkPassword.error
 
-    code = if typeof TwoFactor.generateCode is 'function' then TwoFactor.generateCode() else generateCode()
+    if user.googleAuthenticator and user.googleAuthenticator.enabled
+      return 'google-authenticator'
+    else if user.phone and user.phone.enabled
+      { phone } = user.phone
 
-    if typeof TwoFactor.sendCode is 'function'
-      TwoFactor.sendCode(user, code)
+      if user.phone.codeSentAt
+        limitTimeoutMin = 1
+        currentTime = moment()
+        codeSentAt = moment(user.phone.codeSentAt)
+        deadline = codeSentAt.add(limitTimeoutMin, 'minutes')
+        elapsedTimeString = moment.duration(deadline.diff(currentTime), "milliseconds").format(
+          'mm[m] ss[s]',
+          {trim: false}
+        )
+        if currentTime.isBefore(deadline)
+          throw new Meteor.Error(403, 'Too many calls', {timeout: elapsedTimeString})
 
-    Meteor.users.update user._id, {
-      $set:
-        [fieldName]: code
-    }
+
+      code = if typeof TwoFactor.generateCode is 'function' then TwoFactor.generateCode() else generateCode()
+      Meteor.users.update user._id, {
+        $set:
+          'phone.code': code,
+          'phone.codeSentAt': new Date()
+      }
+      if typeof TwoFactor.sendCode is 'function'
+        TwoFactor.sendCode(user, code)
+
+      return 'phone'
 
   'TwoFactor.verifyCodeAndLogin': (options) ->
     check options, {
@@ -213,13 +238,24 @@ Meteor.methods
     if checkPassword.error
       throw invalidLogin()
 
-    if options.code isnt user[fieldName]
-      throw new Meteor.Error(403, 'Invalid code')
+    # Google Authenticator is enabled
+    if user.googleAuthenticator and user.googleAuthenticator.enabled
+      token = user.googleAuthenticator.token
+      verified = null
+      try
+        verified = Authenticator.verifyAuthCode(options.code, token.key)
+      catch e
+        if e.reason is 'Security code is invalid'
+          throw new Meteor.Error(406, 'Security code is invalid')
+    else if user.phone and user.phone.enabled
+      if options.code isnt user.phone.code
+        throw new Meteor.Error(406, 'Security code is invalid')
 
-    Meteor.users.update user._id, {
-      $unset:
-        [fieldName]: ''
-    }
+      Meteor.users.update user._id, {
+        $unset:
+          'phone.code': ''
+          'phone.codeSentAt': ''
+      }
 
     Accounts._attemptLogin this, 'login', '', {
       type: '2FALogin'
