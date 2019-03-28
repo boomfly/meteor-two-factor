@@ -1,0 +1,19 @@
+{
+  "lockfileVersion": 1,
+  "dependencies": {
+    "moment": {
+      "version": "2.20.0",
+      "resolved": "https://registry.npmjs.org/moment/-/moment-2.20.0.tgz",
+      "integrity": "sha512-r7aEpLB/mhMUiC5ksahDajF/Jr3wS/qLzUnwOJCZyKWF34ibdvW8saujBKfR7aQlov//JgFA38HXOoIt7lXzcA=="
+    },
+    "moment-duration-format": {
+      "version": "2.2.1",
+      "resolved": "https://registry.npmjs.org/moment-duration-format/-/moment-duration-format-2.2.1.tgz",
+      "integrity": "sha1-uc5eUFGhUoKgpsNh8MBWhcfq1Hw="
+    },
+    "phone": {
+      "version": "https://github.com/boomfly/node-phone/archive/835e80c6e15a97b6e3d63d1c593848ddbb2348fb.tar.gz",
+      "integrity": "sha512-aOCAP0EiNw4BPxIlSDD5xRyRx075mwoD7yL2wPoN7TTOrqk7cz75/X1JwMuQNQ7INZuvzw9EWyf3IftiD9yt3A=="
+    }
+  }
+}
