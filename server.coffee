@@ -50,6 +50,8 @@ Meteor.methods
     # }
     switch method
       when 'google-authenticator'
+        if currentUser.googleAuthenticator?.newToken
+          return currentUser.googleAuthenticator?.newToken
         # Generate new totp from google and set to newToken
         domain = TwoFactor.options.googleAuthenticatorDomain or 'example.com'
         if currentUser.username
