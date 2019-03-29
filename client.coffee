@@ -37,8 +37,8 @@ clearState = (name = 'TwoFactor.check') ->
 
 getSelector = (user) ->
   if typeof user is 'string'
-    if user.indexOf('@') is -1
-      return { username: user }
+    if user.indexOf('@') isnt -1
+      return { email: user }
     else
       normalizedPhone = phone(user)
       if normalizedPhone.length > 0
@@ -46,7 +46,7 @@ getSelector = (user) ->
       if normalizedPhone
         return { 'phone.number': normalizedPhone }
       else
-        return { email: user }
+        return { username: user }
   return user
 
 callbackHandler = (cb, handlerCb) ->

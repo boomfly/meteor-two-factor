@@ -21,6 +21,7 @@ userQueryValidator = Match.Where (user) ->
     id: Match.Optional(NonEmptyString)
     username: Match.Optional(NonEmptyString)
     email: Match.Optional(NonEmptyString)
+    'phone.number': Match.Optional(NonEmptyString)
   }
   if Object.keys(user).length isnt 1
     throw new Match.Error('User property must have exactly one field')
@@ -86,8 +87,9 @@ Meteor.methods
           codeSentAt: new Date()
         }
         Meteor.users.update {_id: this.userId}, {
-          $set:
+          $set: {
             newPhone
+          }
         }
         if typeof TwoFactor.sendCode is 'function'
           TwoFactor.sendCode(newPhone.number, code)
@@ -142,7 +144,7 @@ Meteor.methods
         throw new Meteor.Error(500, 'Unknown method')
 
   'TwoFactor.disable': (options) ->
-    console.log('TwoFactor.disable', options)
+    # console.log('TwoFactor.disable', options)
     throw new Meteor.Error(403, 'Access restricted') unless this.userId
     currentUser = Meteor.users.findOne(this.userId)
     options = {} unless options
