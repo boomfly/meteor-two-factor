@@ -532,9 +532,12 @@ Accounts.validateLoginAttempt (options) ->
     if typeof TwoFactor.validateLoginAttempt is 'function'
       return TwoFactor.validateLoginAttempt(options)
     false
+<<<<<<< HEAD
   
   if options.user?.banned
     return false
+=======
+>>>>>>> a9dba2769be6b98c143968544c5044e069f0a4be
 
   allowedMethods = ['createUser', 'resetPassword', 'verifyEmail']
 
